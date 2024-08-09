@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Display a map on a webpage</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.js"></script>
+<script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.0/mapbox-gl-directions.js'></script>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf/turf.min.js"></script>
+<script src = "js/map1.js"></script>
+
+
+
+<style>  
+    body { margin: 0; padding: 0; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    #direction-button {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        margin: 5px;
+    }   
+</style>
+</head>
+<body>
+<div id="map"></div>
+<button id="direction-button"> Directions </button>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        axios.get('/config')
+        .then( response => {
+                const mapboxAccessToken = response.data.mapboxAccessToken;
+                let map = initializeMap(mapboxAccessToken);
+                map = geoLocateTest(map);
+
+                
+                // this is the functionality for clicking direction and then getting the route
+                var directionButtonClicked = false;
+                document.getElementById('direction-button').addEventListener('click', () => {
+                    const coordinates = [];
+                    var routeGeometry = {};
+                    
+                    if( !directionButtonClicked )
+                    {
+                        map.addLayer({
+                            'id': 'route',
+                            'type': 'line',
+                            'source':  {
+                                'type': 'geojson',
+                                'data': {
+                                    'type': 'Feature',
+                                    'properties': {},
+                                    'geometry': routeGeometry
+                                }
+                            },
+                            'layout': {
+                                'line-join': 'round',
+                                'line-cap': 'round'
+                            },
+                            'paint': {
+                                'line-color': '#888',
+                                'line-width': 8
+                            }
+                        });  
+
+                        map.on('click',(e)=>{
+                            coordinates.push(e.lngLat);
+                            alert( `you have clicked on ${coordinates[coordinates.length-1].lat} and ${coordinates[coordinates.length-1].lng}`);
+                            
+                            if( coordinates.length >= 2 ){
+
+                                axios.post('/direction', { coordinates:coordinates })
+                                .then( response => {
+                                    routeGeometry = response.data.routeGeometry;
+                                    console.log( routeGeometry );
+                                    
+                                    map.getSource('route').setData({
+                                        'type': 'Feature',
+                                        'properties': {},
+                                        'geometry': routeGeometry
+                                    })
+
+
+                                    // for making the direction track clickable
+                                    map.on('click', 'route', (e) => {
+                                        const coordinates = e.lngLat;
+                            
+                                        // Display popup or perform any action
+                                        new mapboxgl.Popup()
+                                            .setLngLat(coordinates)
+                                            .setHTML(`<p>Clicked on route at coordinates: ${coordinates.lng}, ${coordinates.lat}</p>`)
+                                            .addTo(map);
+                                    });
+                            
+                                    map.setCenter([coordinates[0].lng,coordinates[0].lat]);
+                                })
+                                .catch( error => {
+                                    console.error(error);
+                                })
+                            }
+                        });
+                    }
+                    directionButtonClicked = true;
+                }); 
+            })  
+            .catch( error => {
+                console.error(error);
+            }); 
+
+            // direction ends here :)
+    });
+
+
+
+</script>
+
+</body>
+</html> 
+
+
+

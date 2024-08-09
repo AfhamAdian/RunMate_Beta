@@ -1,0 +1,59 @@
+    1)
+    map.addControl(geolocate);              // adds a button
+
+
+    2)
+    // fucntions for adding path line
+    map.addSource('route', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': []
+                }
+            }
+    });
+    
+
+    3)
+    map.addLayer({
+        'id': 'route',
+        'type': 'line',
+        'source': 'route',
+        'layout': {
+            'line-join': 'round',
+            'line-cap': 'round'
+        },
+        'paint': {
+            'line-color': '#888',
+            'line-width': 8
+        }
+    });
+
+    4)
+    const watchID = navigator.geolocation.watchPosition( success, error, options )
+    navigator.geolocation.clearWatch(watchID)
+
+    5)
+    const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${point1[0]},${point1[1]};${point2[0]},${point2[1]}?alternatives=true&annotations=distance,duration&continue_straight=true&geometries=geojson&language=en&overview=full&steps=true&access_token=${mapboxAccessToken}`;
+
+
+    6)
+    if( map.isStyleLoaded() )
+    {
+        // calculateTimeAndDistance(map);
+        walkingRouteBetweenTwoCoords( map,mapboxAccessToken ); 
+    } else {
+        map.once('load', () => {
+           // calculateTimeAndDistance(map);
+            walkingRouteBetweenTwoCoords( map,mapboxAccessToken );
+        });
+    }
+
+    7)
+    Added event listener for load
+    map.on('load', () => {
+        geolocate.trigger();
+    });

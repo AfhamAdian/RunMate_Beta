@@ -1,0 +1,28 @@
+{
+  "name": "runmate_beta",
+  "version": "1.0.0",
+  "description": "RunMate_Beta : Your running assistant",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AfhamAdian/RunMate_Beta.git"
+  },
+  "author": "Mohammed_Afham_Adian",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AfhamAdian/RunMate_Beta/issues"
+  },
+  "homepage": "https://github.com/AfhamAdian/RunMate_Beta#readme",
+  "dependencies": {
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mapbox-gl": "^3.5.2",
+    "morgan": "^1.10.0",
+    "nodemon": "^3.1.4"
+  }
+}
