@@ -44,7 +44,18 @@
                 let map = initializeMap(mapboxAccessToken);
                 map = geoLocateTest(map);
 
-                
+                //if( map.isStyleLoaded() )
+                //{
+                //    calculateTimeAndDistance(map);
+                //    //walkingRouteBetweenTwoCoords( map,mapboxAccessToken ); 
+                //} else {
+                //    map.once('load', () => {
+                //       calculateTimeAndDistance(map);
+                //        //walkingRouteBetweenTwoCoords( map,mapboxAccessToken );
+                //    });
+                //}
+
+
                 // this is the functionality for clicking direction and then getting the route
                 var directionButtonClicked = false;
                 document.getElementById('direction-button').addEventListener('click', () => {
@@ -126,7 +137,5 @@
 </script>
 
 </body>
-</html> 
-
-
+</html>
 

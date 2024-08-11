@@ -19,10 +19,14 @@
   "homepage": "https://github.com/AfhamAdian/RunMate_Beta#readme",
   "dependencies": {
     "axios": "^1.7.2",
+    "cookie-parser": "^1.4.6",
     "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
     "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
     "mapbox-gl": "^3.5.2",
     "morgan": "^1.10.0",
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.4",
+    "pg": "^8.12.0"
   }
 }
