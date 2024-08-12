@@ -13,7 +13,7 @@ router
 
         if( isLoggedIn == undefined || isLoggedIn == "false" ){
             console.log("user is not logged in");
-            res.render('../views/logIn',{authorized: "false"});
+            res.render('../views/logIn');
         }
         else if (isLoggedIn == "true"){
             console.log("user is already logged in");

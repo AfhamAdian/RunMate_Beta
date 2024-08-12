@@ -24,12 +24,13 @@ dotenv.config();
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, ()=> console.log('server started to listening at port 3000'));
 
-
+const {addTrackToApprovalList} = require('./src/api/trackApi.js');
 
 
 
 app.use('/', require('./src/routes/home.js'));
 app.use('/login', require('./src/routes/logIn.js'));
+app.use('/track', require('./src/routes/track.js'));
 
 // Routes//
 // app.get('/', (req, res) => {
@@ -40,43 +41,72 @@ app.get('/config', (req, res) => {
     res.status(200).json({ mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN });
 })
 
-// app.post('/direction', async (req,res) => {
-//     const coordinates = req.body.coordinates;
-
-//     const routeGeometry = await getRoute(coordinates);
-//     const temp = { routeGeometry : routeGeometry };
-//     console.log( temp );
-
-//     res.status(200).json(temp);
-// })
 
 
+// app.post('/addTrack', async (req, res) => {
+//     //console.log(req.body);
+//     const trackSourceData = req.body.trackGeojson;
+//     const routeDistance = req.body.routeDistance;
+//     const routeDuration = req.body.routeDuration;
 
-// async function getRoute( coordinates )
-// {
-//     var url = `https://api.mapbox.com/directions/v5/mapbox/walking/`;
-//     // ${point1[0]},${point1[1]};${point2[0]},${point2[1]}
-//     coordinates.forEach( coord => {
-//         url += coord.lng+`,`+coord.lat+`;`;
-//     });
+//     console.log(trackSourceData);
+//     console.log(routeDistance);
+//     console.log(routeDuration);
+
+//     const result = await addTrackToApprovalList(1, routeDistance, routeDuration, trackSourceData);
+//     console.log('result' + result);
+// });
+
+
+
+
+
+app.post('/direction', async (req,res) => {
+    const coordinates = req.body.coordinates;
+
+    const response = await getRoute(coordinates);
     
-//     url = url.slice(0, -1);
-//     url += `?alternatives=true&annotations=distance,duration&continue_straight=true&geometries=geojson&language=en&overview=full&steps=true&access_token=${ process.env.MAPBOX_ACCESS_TOKEN }`;
+    console.log(response);
 
-//     console.log( url );
+    res.status(200).json(response);
+})
 
-//     var routeGeometry;
-//     try {
-//         const response = await axios.get(url);
-//         routeGeometry = response.data.routes[0].geometry;
 
-//         // console.log( routeGeometry );
-//         // console.log( 'route : ');
-//         // console.log( routeGeometry );
-//         console.log( 'url fethced ');
 
-//         return routeGeometry;        
-//     } catch (error) {
-//         console.error('eror in api call')
-//     }
-// }
+async function getRoute( coordinates )
+{
+    var url = `https://api.mapbox.com/directions/v5/mapbox/walking/`;
+    // ${point1[0]},${point1[1]};${point2[0]},${point2[1]}
+    coordinates.forEach( coord => {
+        url += coord.lng+`,`+coord.lat+`;`;
+    });
+    
+    url = url.slice(0, -1);
+    url += `?alternatives=true&annotations=distance,duration&continue_straight=true&geometries=geojson&language=en&overview=full&steps=true&access_token=${ process.env.MAPBOX_ACCESS_TOKEN }`;
+
+    console.log( url );
+
+    var routeGeometry;
+    var distance;
+    var duration;
+    try {
+        const response = await axios.get(url)
+        // console.log(response);
+        routeGeometry = response.data.routes[0].geometry;
+        distance = response.data.routes[0].distance;
+        duration = response.data.routes[0].duration;
+
+        // console.log( 'duration : ', duration ); 
+        console.log( 'url fethced ');
+        const res = {
+            routeGeometry : routeGeometry,
+            distance : distance,
+            duration : duration
+        }
+        
+        // console.log(res);
+        return res;        
+    } catch (error) {
+        console.error('eror in api call')
+    }
+}

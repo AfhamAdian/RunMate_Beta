@@ -30,18 +30,38 @@
         font-size: 14px;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         margin: 5px;
-    }   
+    }  
+    #add-track-button{
+        position: absolute;
+        bottom: 15px;
+        left: 15px;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        margin: 5px;       
+    }
+
 </style>
 </head>
 <body>
 <div id="map"></div>
 <button id="direction-button"> Directions </button>
+<button id="add-track-button"> Add Track</button>
 <script>
+    let map;
+    let coordinates = [];
+    let routeGeometry = {};
+    
     document.addEventListener('DOMContentLoaded', () => {
         axios.get('/config')
         .then( response => {
                 const mapboxAccessToken = response.data.mapboxAccessToken;
-                let map = initializeMap(mapboxAccessToken);
+                map = initializeMap(mapboxAccessToken);
                 map = geoLocateTest(map);
 
                 //if( map.isStyleLoaded() )
@@ -54,7 +74,7 @@
                 //        //walkingRouteBetweenTwoCoords( map,mapboxAccessToken );
                 //    });
                 //}
-
+               
 
                 // this is the functionality for clicking direction and then getting the route
                 var directionButtonClicked = false;
@@ -123,17 +143,119 @@
                         });
                     }
                     directionButtonClicked = true;
-                }); 
+                });
             })  
             .catch( error => {
                 console.error(error);
             }); 
 
             // direction ends here :)
+
+
+            // this is the functionality for adding track
+            document.getElementById('add-track-button').addEventListener('click', onClickAddTrackButton);
+
     });
 
 
 
+    // callback function for add-track-button
+    async function onClickAddTrackButton(e){
+        alert('add track button clicked');
+
+        var trackResponseRecieved = false;
+        coordinates = [];
+        routeGeometry = {};
+
+        map.addSource('routeAddTrack', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': routeGeometry
+            }
+        });
+
+        map.addLayer({
+            'id': 'routeAddTrack',
+            'type': 'line',
+            'source': 'routeAddTrack',
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#888',
+                'line-width': 8
+            }
+        });
+
+        map.on('click', mapOnClickDirectionApi);
+        
+        // map click event listeener removed after track added
+        if( trackResponseRecieved ){
+           map.off('click', mapOnClickDirectionApi);
+        }
+
+    }
+
+    //callback function for map.on('click') eventlistener
+    async function mapOnClickDirectionApi(e) {
+        coordinates.push(e.lngLat);
+        alert(`You have clicked on ${coordinates[coordinates.length - 1].lat} and ${coordinates[coordinates.length - 1].lng}`);
+    
+        if (coordinates.length >= 2) {
+            try {
+                // Post request to get the route
+                const directionResponse = await axios.post('/direction', { coordinates: coordinates });
+                const routeGeometry = directionResponse.data.routeGeometry;
+                const routeDistance = directionResponse.data.distance;
+                const routeDuration = directionResponse.data.duration;
+
+                console.log(routeGeometry);
+                console.log(routeDistance);
+                console.log(routeDuration);
+
+                map.getSource('routeAddTrack').setData({
+                    'type': 'Feature',
+                    'properties': {},
+                    'geometry': routeGeometry
+                });
+    
+                // For making the direction track clickable
+                map.on('click', 'routeAddTrack', (e) => {
+                    const coordinates = e.lngLat;
+                    alert(`Clicked on route at coordinates: ${coordinates.lng}, ${coordinates.lat}`);
+                    // Display popup or perform any action
+                    new mapboxgl.Popup()
+                        .setLngLat(coordinates)
+                        .setHTML(`<p>Clicked on route at coordinates: ${coordinates.lng}, ${coordinates.lat}</p>`)
+                        .addTo(map);
+                });
+    
+                map.setCenter([coordinates[0].lng, coordinates[0].lat]);
+    
+
+
+                // Post request to send the route to the server
+                const trackGeojson = map.getSource('routeAddTrack')._data;
+                console.log( typeof trackGeojson );
+                const addTrackResponse = await axios.post('/track/addTrack', { trackGeojson: trackGeojson, routeDistance: routeDistance, routeDuration: routeDuration });
+    
+                if (addTrackResponse.status === 200) {
+                    alert('Track added successfully');
+                    trackResponseRecieved = true;
+                } else {
+                    alert('Failed to add track');
+                    trackResponseRecieved = true;
+                    coordinates = [];
+                    routeGeometry = {};
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    }
 </script>
 
 </body>

@@ -83,9 +83,11 @@ ALTER TABLE users
 ADD COLUMN first_name VARCHAR(255),
 ADD COLUMN last_name VARCHAR(255);
 
+ALTER TABLE users
+ADD COLUMN user_phone INT;
+
 -- Add UNIQUE constraint to user_email column
 ALTER TABLE users
 ADD CONSTRAINT unique_user_email UNIQUE (user_email);
-
 
 

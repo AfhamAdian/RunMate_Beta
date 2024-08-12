@@ -19,6 +19,7 @@
   "homepage": "https://github.com/AfhamAdian/RunMate_Beta#readme",
   "dependencies": {
     "axios": "^1.7.2",
+    "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",

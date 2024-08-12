@@ -1,6 +1,10 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { authUser } = require('../api/logInApi.js');
+const { 
+    authUser,
+    emailExists,
+    signUpUser
+} = require('../api/logInApi.js');
 
 const router = express.Router();
 
@@ -12,7 +16,7 @@ router
     .get( async(req,res) =>
     {
         // here we will render login.ejs page
-        res.render('../views/logIn',{authorized: "false"});
+        res.render('../views/logIn');
     })
 
     .post( async ( req, res ) => 
@@ -51,6 +55,42 @@ router
         }
     })
 
+router
+    .route('/signup')
+    .post( async ( req, res ) => 
+    {
+        // here we will take login data from user and check if it is valid or not
+        // if valid then redirect to home page
+        // else show error message
+        try{
+            const {
+                name,
+                email,
+                phone,
+                password
+            } = req.body;
 
+            const emailExistsStatus = await emailExists( email );
+            console.log(emailExistsStatus);
+
+            if( emailExistsStatus == false ){
+                const flag = await signUpUser( name, email, phone, password );
+                if( flag == true ){
+                    res.status(200).json( { message: 'User Signed Up' } );
+                    console.log("User Signed Up");
+                }
+                else{
+                    res.status(400).json( { message: 'error occurred, couldnot sign up' } );
+                    console.log("error occurred, couldnot sign up");
+                }
+            } 
+            else{
+                res.status(403).json( { message: 'Email already exists' } );
+                console.log("Email already exists");
+            }
+        }catch(err){
+            console.log(err);
+        }
+    })
 
 module.exports = router;
