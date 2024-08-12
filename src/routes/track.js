@@ -1,5 +1,7 @@
 const router = require('express').Router();
+const jwt = require('jsonwebtoken');
 const {addTrackToApprovalList} = require('../api/trackApi.js');
+const {getUserIdFromJwt} = require('../utils/getUserIdFromJwt.js');
 
 router
     .route('/addTrack')
@@ -9,12 +11,14 @@ router
             const trackSourceData = req.body.trackGeojson;
             const routeDistance = req.body.routeDistance;
             const routeDuration = req.body.routeDuration;
-        
-            console.log(trackSourceData);
-            console.log(routeDistance);
-            console.log(routeDuration);
-        
-            const result = await addTrackToApprovalList(1, routeDistance, routeDuration, trackSourceData);
+    
+            const user_id = await getUserIdFromJwt( req );
+            if( user_id == null ){
+                res.status(403).json({ message: 'User not logged in' });
+                return;
+            }
+
+            const result = await addTrackToApprovalList(user_id, routeDistance, routeDuration, trackSourceData);
             console.log('result' + result);
             
             if( result == true ){

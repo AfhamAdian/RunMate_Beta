@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Page</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .btn-approve {
+      background-color: #28a745;
+      border-color: #28a745;
+      color: white;
+      font-weight: bold;
+      border-radius: 50px;
+      padding: 5px 20px;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+
+    .btn-approve:hover {
+      background-color: #218838;
+      transform: scale(1.05);
+    }
+  </style>
+
+  <script src = "https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+
+
+
+<div class="container mt-5">
+  <h2 class="mb-4">Pending Approvals</h2>
+  <ul class="list-group">
+    <% items.forEach(function(item) { %>
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span><%= item.approval_track_distance %></span>
+        <span><%= item.approval_track_duration %></span>
+        <span><%= item.date %></span>
+        <button class="btn-approve" onclick="approveItem(<%= item.approval_id %>)">Approve</button>
+      </li>
+    <% }); %>
+  </ul>
+</div>
+
+<script>
+  async function approveItem(itemId) {
+        axios.post(`admin/approve/${itemId}`)
+        .then( response => {
+            if( response.status == 200 ) {
+                console.log('Item approved successfully')
+                location.reload();
+            }else{
+                console.log('Failed to approve item')
+            }
+        })
+        .catch( error => {
+            console.log(error)
+        })
+  }
+</script>
+
+</body>
+</html>

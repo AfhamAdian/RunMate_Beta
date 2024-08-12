@@ -24,14 +24,13 @@ dotenv.config();
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, ()=> console.log('server started to listening at port 3000'));
 
-const {addTrackToApprovalList} = require('./src/api/trackApi.js');
-
 
 
 app.use('/', require('./src/routes/home.js'));
 app.use('/login', require('./src/routes/logIn.js'));
 app.use('/track', require('./src/routes/track.js'));
 
+app.use('/admin', require('./src/routes/admin.js'));
 // Routes//
 // app.get('/', (req, res) => {
 //     res.status(200).sendFile(path.join(__dirname, 'public/map1.html'));

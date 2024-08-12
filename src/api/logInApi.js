@@ -46,7 +46,7 @@ async function signUpUser( name, email, phone, password ){
 
         const result = await pool.query(query, values);
         console.log(result.rows[0].result);
-        
+
         if( result.rows[0].result == 1 ){
             return true;
         }
@@ -61,8 +61,22 @@ async function signUpUser( name, email, phone, password ){
 }
 
 
+async function getUserIdFromEmail ( email )
+{
+    try{
+        const query = `SELECT user_id FROM users WHERE user_email = '${email}'`;
+        const values = [];
+        
+        const result = await pool.query(query, values);
+        return result.rows[0].user_id;
+    }catch(err){
+        console.log(err);
+    }
+}
+
 module.exports = {
     authUser,
     emailExists,
-    signUpUser
+    signUpUser,
+    getUserIdFromEmail
 };
