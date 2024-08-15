@@ -2,17 +2,16 @@ const express = require('express');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser')
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const axios = require('axios');
-const pool = require('./src/db/db');
-const cookieParser = require('cookie-parser');
  
 
 const app = express();
 app.set("view engine","ejs");
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(cookieParser());
 
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({extended : true}));
 app.use(morgan('dev'));
@@ -76,14 +75,20 @@ async function getRoute( coordinates )
 {
     var url = `https://api.mapbox.com/directions/v5/mapbox/walking/`;
     // ${point1[0]},${point1[1]};${point2[0]},${point2[1]}
-    coordinates.forEach( coord => {
-        url += coord.lng+`,`+coord.lat+`;`;
-    });
-    
-    url = url.slice(0, -1);
-    url += `?alternatives=true&annotations=distance,duration&continue_straight=true&geometries=geojson&language=en&overview=full&steps=true&access_token=${ process.env.MAPBOX_ACCESS_TOKEN }`;
+    try{
+        coordinates.forEach( coord => {
+            console.log(coord);
+            url += coord.lng+`,`+coord.lat+`;`;
+        });
+        
+        url = url.slice(0, -1);
+        url += `?alternatives=true&annotations=distance,duration&continue_straight=true&geometries=geojson&language=en&overview=full&steps=true&access_token=${ process.env.MAPBOX_ACCESS_TOKEN }`;
 
-    console.log( url );
+        console.log( url );
+    }catch(err){
+        console.log('error in uahhahahahahahahahahahahaahhhahahahahahahharl formation');  
+        console.log(err);
+    }
 
     var routeGeometry;
     var distance;
@@ -108,4 +113,14 @@ async function getRoute( coordinates )
     } catch (error) {
         console.error('eror in api call')
     }
+}
+
+function toLonLat(input) {
+    const RADIUS = 6378137;
+    const HALF_SIZE = Math.PI * RADIUS;
+
+    const lon = (180 * input[0]) / HALF_SIZE;
+    const lat = (360 * Math.atan(Math.exp(input[1] / RADIUS))) / Math.PI - 90;
+
+    return [lon, lat];
 }

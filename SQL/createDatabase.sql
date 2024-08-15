@@ -64,7 +64,7 @@ create table approval_list(
 
 
 create table user_achievement(
-    user_achievement_id INT PRIMARY KEY,
+    user_achievement_id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
     achievement_id INT REFERENCES achievement_list(achievement_id) ON DELETE CASCADE,
     user_achievement_date TIMESTAMP default CURRENT_TIMESTAMP
@@ -76,7 +76,7 @@ create table user_product(
     user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
     product_id INT REFERENCES products(product_id)  ON DELETE CASCADE,
     user_product_date TIMESTAMP default CURRENT_TIMESTAMP
-);
+); 
 
 
 ALTER TABLE users
@@ -86,8 +86,37 @@ ADD COLUMN last_name VARCHAR(255);
 ALTER TABLE users
 ADD COLUMN user_phone INT;
 
+ALTER TABLE records
+ADD COLUMN user_id INT REFERENCES users(user_id) ON DELETE CASCADE;
+
+ALTER TABLE records
+DROP COLUMN record_duration;
+
+ALTER TABLE records
+DROP COLUMN record_distance;
+
+ALTER TABLE records
+ADD COLUMN record_duration DECIMAL(35,20);
+
+ALTER TABLE records
+ADD COLUMN record_distance DECIMAL(35,20);
+
+alter table points 
+add column point_streak_highest INT;
+
+alter table points 
+drop column point_streak_highest;
+
+alter table points 
+add column points INT;
+
+alter table points
+drop column point_distance;
+
+alter table points
+add column point_distance DECIMAL(35,20);
+
 -- Add UNIQUE constraint to user_email column
 ALTER TABLE users
 ADD CONSTRAINT unique_user_email UNIQUE (user_email);
-
 

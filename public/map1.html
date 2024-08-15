@@ -4,9 +4,13 @@
 <meta charset="utf-8">
 <title>Display a map on a webpage</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.css" rel="stylesheet">
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css" type="text/css">
+
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.js"></script>
 <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.0/mapbox-gl-directions.js'></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf/turf.min.js"></script>
@@ -14,13 +18,11 @@
 
 
 
-<style>  
+<style>
     body { margin: 0; padding: 0; }
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    #direction-button {
-        position: absolute;
-        top: 15px;
-        left: 15px;
+
+    .btn{
         padding: 10px 20px;
         background-color: #007bff;
         color: #fff;
@@ -29,34 +31,75 @@
         cursor: pointer;
         font-size: 14px;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        margin: 5px;
+        margin: 5px;  
+    }
+    .overlayClass {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: none;
+    }
+    .highlight {
+        stroke: yellow;
+        stroke-width: 5;
+    }
+    .glow {
+        box-shadow: 0 0 15px 5px rgba(255, 255, 0, 0.75); /* Yellow glow */
+    }
+    
+    #direction-button {
+        position: absolute;
+        top: 15px;
+        left: 15px;
     }  
     #add-track-button{
         position: absolute;
         bottom: 15px;
         left: 15px;
-        padding: 10px 20px;
-        background-color: #007bff;
-        color: #fff;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        margin: 5px;       
+     
     }
+    #show-tracks-button{
+        position: absolute;
+        bottom: 50px;
+        left: 15px;
+    }
+    #start-running-button{
+        position: absolute;
+        bottom: 85px;
+        left: 15px;
+    }
+    @keyframes glow {
+        0% {
+            box-shadow: 0 0 5px 2px rgba(255, 255, 0, 0.5);
+        }
+        50% {
+            box-shadow: 0 0 20px 10px rgba(255, 255, 0, 1);
+        }
+        100% {
+            box-shadow: 0 0 5px 2px rgba(255, 255, 0, 0.5);
+        }
+    }
+
 
 </style>
 </head>
 <body>
 <div id="map"></div>
-<button id="direction-button"> Directions </button>
-<button id="add-track-button"> Add Track</button>
+<button class="btn" id="direction-button"> Directions </button>
+<button class="btn" id="add-track-button"> Add Track</button>
+<button class="btn" id="show-tracks-button"> Show Tracks</button>
+<button class="btn" id="start-running-button">Start Running</button>
 <script>
     let map;
     let coordinates = [];
     let routeGeometry = {};
+    let currentPositionCoordinates = [];
     
+
     document.addEventListener('DOMContentLoaded', () => {
         axios.get('/config')
         .then( response => {
@@ -151,10 +194,14 @@
 
             // direction ends here :)
 
-
-            // this is the functionality for adding track
-            document.getElementById('add-track-button').addEventListener('click', onClickAddTrackButton);
-
+            try{
+                document.getElementById('add-track-button').addEventListener('click', onClickAddTrackButton);
+                document.getElementById('show-tracks-button').addEventListener('click', onClickShowTracksButton);
+                document.getElementById('start-running-button').addEventListener('click', onClickStartRunningFromHere);
+            }catch(error){
+                console.error(error);
+            } 
+               
     });
 
 
@@ -256,6 +303,343 @@
             }
         }
     }
+
+
+
+
+    // fucntionality for showtracksbutton
+    async function onClickShowTracksButton(e)
+    {
+        alert('show tracks button clicked');
+        
+        try {
+            const response = await axios.get('/track/getTracks');
+            const trackSourceDataArray = response.data; // Assuming the response data is an array of GeoJSON objects
+            console.log(trackSourceDataArray);
+
+            trackSourceDataArray.forEach((trackData, index) => {
+                const sourceId = `trackSource${index}`;
+                const layerId = `trackLayer${index}`;
+
+                // Add each track as a source and layer
+                map.addSource(sourceId, {
+                    'type': 'geojson',
+                    'data': trackData.track_data
+                });
+
+                map.addLayer({
+                    'id': layerId,
+                    'type': 'line',
+                    'source': sourceId,
+                    'layout': {
+                        'line-join': 'round',
+                        'line-cap': 'round'
+                    },
+                    'paint': {
+                        'line-color': '#888',
+                        'line-width': 8
+                    }
+                });
+
+
+                // Add click event listener for each track layer
+                map.on('click', layerId, (e) => {
+                    const coordinates = e.lngLat;
+                    
+
+                    //***** add what to do once clicked on track here
+                    map.setCenter([coordinates.lng, coordinates.lat]);
+                    map.setZoom( 14 );
+                    
+                    console.log(`Clicked on track at coordinates: ${coordinates.lng}, ${coordinates.lat}`);
+                    // creation and append of run this track button
+                    const runThisTrackButton = document.createElement('button');
+                    runThisTrackButton.classList.add('btn');
+                    runThisTrackButton.id = 'run-this-track-button';
+                    runThisTrackButton.innerHTML = 'Run this track';
+                    runThisTrackButton.style.position = 'absolute';
+                    runThisTrackButton.style.top = '20px';
+                    runThisTrackButton.style.left = '50%';
+                    document.body.appendChild(runThisTrackButton);
+
+                    // For clicking the button
+                    document.getElementById('run-this-track-button').addEventListener('click', () => { onClickRunThisTrack(e, layerId) });
+                    
+
+                    // Show the overlay
+                    //const overlay = document.createElement('div');
+                    //overlay.classList.add('overlayClass');
+                    //document.body.appendChild(overlay);
+                    //overlay.style.display = 'block';
+                    //overlay.style.pointerEvents = 'none';
+
+                    
+                    // Highlight the track area
+                    //const mapContainer = document.getElementById('map'); // Assuming your map container has the ID 'map'
+                    //mapContainer.classList.add('glow'); 
+                    
+                    //Highlight the track area with a glow effect
+                    map.setPaintProperty(layerId, 'line-color', 'yellow');
+                    map.setPaintProperty(layerId, 'line-width', 5);
+
+                    //Optionally, you can add a glow effect to the track itself
+                    //const trackElement = document.querySelector(`[data-layer-id="${layerId}"]`); // Assuming you can select the track element
+                    //if (trackElement) {
+                    //    trackElement.classList.add('glow');
+                    //}
+
+                });
+                
+
+                // Change the cursor to a pointer when the mouse is over the track layer
+                map.on('mouseenter', layerId, () => {
+                    map.getCanvas().style.cursor = 'pointer';
+                });
+                
+                 map.on('mouseleave', layerId, () => {
+                    map.getCanvas().style.cursor = '';
+                });
+
+            });
+        } catch (error) {
+            console.error('Error fetching tracks:', error);
+        }
+        
+    }
+
+
+    //function after clicking on track
+    async function onClickRunThisTrack(e, layerId){
+
+        var flag = false;
+        // checks if permission is given
+        if( 'geolocation' in navigator ){
+            flag = true;
+        }
+        if( flag === false ){
+            alert('Geolocation is not available');
+            return;
+        }
+
+        // get the current position
+        let myCoords;
+        const positionCurrent = await getCurrentPosition();
+        myCoords = [positionCurrent.coords.longitude, positionCurrent.coords.latitude];
+
+        // get layerId -> sourceid -> track coords
+        console.log( layerId );
+        const tempLayer = map.getLayer(layerId);
+        console.log( tempLayer );
+        const sourceId = map.getLayer(layerId).source;
+        const trackCoords = map.getSource(sourceId)._data.geometry.coordinates;
+        
+        const firstCoord = trackCoords[0];
+        const lastCoord = trackCoords[trackCoords.length - 1];
+
+        coordinates.push({ lng: myCoords[0], lat: myCoords[1] });
+        coordinates.push( {lng: firstCoord[0], lat: firstCoord[1]} );
+        coordinates.push( {lng: lastCoord[0], lat: lastCoord[1]} );
+        
+        // get the route
+        const routeGeometry = await getDirection();
+        //clearAllLayers(map);
+        //clearAllSources(map);
+        
+        // add the route to the map
+        map.addSource('trackToRun', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': routeGeometry
+            }
+        });
+
+        map.addLayer({
+            'id': 'trackToRun',
+            'type': 'line',
+            'source': 'trackToRun',
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#888',
+                'line-width': 8
+            }
+        });
+        
+    }
+
+    
+    // function to start running from the current position
+    async function onClickStartRunningFromHere(e)
+    {
+        var flag = false;
+        if( 'geolocation' in navigator ){
+            flag = true;
+        }
+        if( flag === false ){
+            alert('Geolocation is not available');
+            return;
+        }
+
+        map.addSource('startRunningFromYourPosition', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': currentPositionCoordinates
+                }
+            }
+        });
+        map.addLayer({
+            'id': 'startRunningFromYourPosition',
+            'type': 'line',
+            'source': 'startRunningFromYourPosition',
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#888',
+                'line-width': 8
+            }
+        });
+        
+        map.setCenter(navigator.geolocation.getCurrentPosition((position) => {
+            return [position.coords.longitude, position.coords.latitude];
+        }));
+        map.setZoom(14);
+        
+        // To calculate Time and Distance
+        var prevCoords = null;  
+        var distanceCovered = 0;
+        var timeElapsed = 0;
+        var pathCoordinates = [];
+        
+
+        // set a watch position
+       const watchId = navigator.geolocation.watchPosition((position) => {
+            const lng = position.coords.longitude;
+            const lat = position.coords.latitude;
+
+            var myCoords = [position.coords.longitude, position.coords.latitude];
+            
+            currentPositionCoordinates.push(myCoords);
+            pathCoordinates.push(myCoords);
+            console.log(pathCoordinates);
+
+            map.getSource('startRunningFromYourPosition').setData({
+                'type': 'Feature',
+                'properties': {},
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': currentPositionCoordinates
+                }
+            });
+
+            //To calculate time and distance
+            if( prevCoords != null ){
+                const point1 = turf.point([prevCoords.longitude, prevCoords.latitude]);
+                const point2 = turf.point([lng, lat]);
+    
+                const options = {units: 'kilometers'};
+                const distance = turf.distance(point1, point2, options);
+                distanceCovered += distance;
+    
+                timeElapsed = (position.timestamp - prevCoords.timestamp) / 1000;
+                prevCoords.timestamp = position.timestamp;
+        
+            } else {
+                prevCoords = {longitude: lng, latitude: lat, timestamp: position.timestamp};
+            }
+    
+        });
+
+        alert('You have started running');
+
+        // adding endrun button
+        const endRunningButton = document.createElement('button');
+        endRunningButton.classList.add('btn');
+        endRunningButton.id = 'end-running-button';
+        endRunningButton.innerHTML = 'End Running';
+        endRunningButton.style.position = 'absolute';
+        endRunningButton.style.top = '50px';
+        endRunningButton.style.left = '25%';
+
+        document.body.appendChild(endRunningButton);
+        document.getElementById('end-running-button').addEventListener('click', () => { endRun(e, watchId, distanceCovered, timeElapsed, pathCoordinates)} );
+    }
+
+
+    async function endRun(e, watchId, distanceCovered, timeElapsed, pathCoordinates) {   
+        navigator.geolocation.clearWatch(watchId);
+        alert(`You have ended the run
+               Distance covered: ${distanceCovered} miles
+               Time elapsed: ${timeElapsed} seconds`);
+    
+        // send the data to the server
+        const runData = {
+            pathCoordinates: pathCoordinates,
+            distanceCovered: distanceCovered,
+            timeElapsed: timeElapsed
+        };
+        console.log('runData:', runData);
+    
+        try {
+            const response = await axios.post('/track/endRun', { runData : runData });
+            if (response.status === 200) {
+                alert('Run data successfully sent and updated');
+            } else {
+                console.log('Failed to send run data');
+            }
+        } catch (error) {
+            console.error('Error sending run data:', error);
+        }
+    }
+
+
+
+    // returns geometry for add source
+    async function getDirection()
+    {
+        const result = await axios.post('/direction', { coordinates:coordinates });
+        return result.data.routeGeometry;
+    }
+
+    // fucntion to celar all the map layers and sources 
+    function clearAllLayers(map) {
+        const layers = map.getStyle().layers;
+        for (let i = layers.length - 1; i >= 0; i--) {
+            const layerId = layers[i].id;
+            map.removeLayer(layerId);
+
+            if (map.getSource(layerId)) {
+                map.removeSource(layerId);
+            }
+        }
+    }
+
+    function clearAllSources(map) {
+        const sources = map.getStyle().sources;
+        for (const sourceId in sources) {
+            if (sources.hasOwnProperty(sourceId)) {
+                map.removeSource(sourceId);
+            }
+        }
+    }
+
+    function getCurrentPosition() {
+        return new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
+    }
+    
+
+
 </script>
 
 </body>
